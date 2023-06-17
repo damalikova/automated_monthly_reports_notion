@@ -36,9 +36,6 @@ def get_data():
     return response["results"]
 
 
-# pprint(get_data())
-
-
 def create_page_template():
     url = "https://api.notion.com/v1/pages"
 
@@ -70,19 +67,6 @@ def create_page_template():
                                    }],
                               "color": "default"
                               }
-            },
-            {
-                "object": "block",
-                "type": "heading_1",
-                "heading_1": {
-                    "rich_text":
-                        [{
-                            "type": "text",
-                            "text": {"content": "Блог"},
-                            "plain_text": "Карьера"
-                        }],
-                    "color": "default"
-                }
             },
             {
                 "object": "block",
@@ -157,4 +141,4 @@ def create_page_template():
     return response
 
 
-pprint(create_page_template())
+pprint(get_data()[0])
