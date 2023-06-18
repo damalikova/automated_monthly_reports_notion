@@ -36,13 +36,66 @@ def get_data():
     return response["results"]
 
 
-def create_page_template():
-    url = "https://api.notion.com/v1/pages"
+def categorize(tasks):
+    categorized = dict()
+
+    for task in tasks:
+
+        category = task["properties"]["Категория"]["multi_select"][0]["name"]
+        name = task["properties"]["Name"]["title"][0]["plain_text"]
+
+        if category not in categorized:
+            categorized[category] = {name: 1}
+        else:
+            if name in categorized[category]:
+                categorized[category][name] += 1
+            else:
+                categorized[category][name] = 1
+
+    return categorized
+
+
+def create_report(prepared_data):
 
     headers = {
         "Authorization": f"Bearer {token}",
         "accept": "application/json",
         "Notion-Version": "2022-06-28"}
+
+    children = []
+
+    for category in prepared_data:
+        category_json = [
+            {
+                "object": "block",
+                "type": "heading_1",
+                "heading_1": {
+                    "rich_text":
+                        [{
+                            "type": "text",
+                            "text": {"content": f"{category}"},
+                            "plain_text": f"{category}"
+                        }],
+                    "color": "default"
+                }
+            }
+        ]
+        for task in prepared_data[category].items():
+
+            task_json = {
+                                "object": "block",
+                                "type": "bulleted_list_item",
+                                "bulleted_list_item":
+                                                     {
+                                                      "rich_text": [{
+                                                                     "type": "text",
+                                                                     "text": {"content": f"{task[0]} — {task[1]}"}
+                                                                    }]
+                                                     }
+                            }
+            category_json.append(task_json)
+
+        children.extend(category_json)
 
     create_page_body = {
         "parent": {"database_id": target_database_id},
@@ -51,94 +104,15 @@ def create_page_template():
                                  "title": [{
                                             "type": "text",
                                             "text": {"content": f"{date.today().strftime('%B')} Report"}
-                                          }]
+                                           }]
                                  }
                        },
-        "children": [
-            {
-                "object": "block",
-                "type": "heading_1",
-                "heading_1": {
-                              "rich_text":
-                                   [{
-                                    "type": "text",
-                                    "text": {"content": "Карьера"},
-                                    "plain_text": "Карьера"
-                                   }],
-                              "color": "default"
-                              }
-            },
-            {
-                "object": "block",
-                "type": "heading_1",
-                "heading_1": {
-                    "rich_text":
-                        [{
-                            "type": "text",
-                            "text": {"content": "Блог"},
-                            "plain_text": "Блог"
-                        }],
-                    "color": "default"
-                }
-            },
-            {
-                "object": "block",
-                "type": "heading_1",
-                "heading_1": {
-                    "rich_text":
-                        [{
-                            "type": "text",
-                            "text": {"content": "Саморазвитие"},
-                            "plain_text": "Саморазвитие"
-                        }],
-                    "color": "default"
-                }
-            },
-            {
-                "object": "block",
-                "type": "heading_1",
-                "heading_1": {
-                    "rich_text":
-                        [{
-                            "type": "text",
-                            "text": {"content": "Красота и здоровье"},
-                            "plain_text": "Красота и здоровье"
-                        }],
-                    "color": "default"
-                }
-            },
-            {
-                "object": "block",
-                "type": "heading_1",
-                "heading_1": {
-                    "rich_text":
-                        [{
-                            "type": "text",
-                            "text": {"content": "Отдых и отношения"},
-                            "plain_text": "Отдых и отношения"
-                        }],
-                    "color": "default"
-                }
-            },
-            {
-                "object": "block",
-                "type": "heading_1",
-                "heading_1": {
-                    "rich_text":
-                        [{
-                            "type": "text",
-                            "text": {"content": "Жизнь в порядке"},
-                            "plain_text": "Жизнь в порядке"
-                        }],
-                    "color": "default"
-                }
-            }
-                   ]
+        "children": children
                         }
 
-    response = requests.post(url, json=create_page_body, headers=headers).json()
+    response = requests.post("https://api.notion.com/v1/pages", json=create_page_body, headers=headers).json()
 
     return response
 
 
-pprint(get_data()[0])
+pprint(create_report(categorize(get_data())))
