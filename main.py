@@ -6,34 +6,43 @@ from datetime import date
 
 def get_data():
 
-    url = f"https://api.notion.com/v1/databases/{source_database_id}/query"
+    response = []
+    weeks = (("2023-06-04", "2023-06-12"), ("2023-06-11", "2023-06-19"), ("2023-06-18", "2023-06-26"), ("2023-06-25", "2023-07-01"))
 
-    headers = {
+    for week in weeks:
+
+        url = f"https://api.notion.com/v1/databases/{source_database_id}/query"
+
+        headers = {
                 "Authorization": f"Bearer {token}",
                 "accept": "application/json",
                 "Notion-Version": "2022-06-28"
               }
 
-    payload = {'filter': {'and':
-                          [
-                            {'date':
-                             {'after': '2023-05-31'},
-                             'property': 'Date'},
-                            {'date':
-                             {'before': '2023-07-01'},
-                             'property': 'Date'}
-                        ]
-                        },
+        payload = {'filter': {
+                          "and":
+                                [
+                                 {
+                                  "property": "Date",
+                                  "date": {"after": week[0]}
+                                 },
+                                 {
+                                   "property": "Date",
+                                   "date": {"before": week[1]}
+                                 },
+                                 ]
+                          },
                "sorts": [
+
                 {
                        "property": "Date",
                        "direction": "ascending"}
             ]
            }
 
-    response = requests.post(url, json=payload, headers=headers).json()
+        response.extend(requests.post(url, json=payload, headers=headers).json()["results"])
 
-    return response["results"]
+    return response
 
 
 def categorize(tasks):
@@ -86,7 +95,7 @@ def create_report(prepared_data):
                                 "object": "block",
                                 "type": "bulleted_list_item",
                                 "bulleted_list_item":
-                                                     {
+                                                    {
                                                       "rich_text": [{
                                                                      "type": "text",
                                                                      "text": {"content": f"{task[0]} — {task[1]}"}
